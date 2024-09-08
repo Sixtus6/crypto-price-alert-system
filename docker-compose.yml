@@ -25,7 +25,7 @@ services:
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
     ports:
-      - "3000:3000"
+      - "5091:5091"
     depends_on:
       - postgres
     networks:
