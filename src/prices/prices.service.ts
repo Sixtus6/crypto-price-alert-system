@@ -95,7 +95,7 @@ export class PricesService {
             });
 
             if (oldPrice && currentPrice && (currentPrice - oldPrice.price) / oldPrice.price > 0.03) {
-                this.sendAlertEmail(chain, currentPrice, '6ixtus6@gmail.com', `The price of ${chain} has increased by more than 3% to $${currentPrice}.`);
+                this.sendAlertEmail(chain, currentPrice, 'hyperhire_assignment@hyperhire.in', `The price of ${chain} has increased by more than 3% to $${currentPrice}.`);
             }
         }
     }

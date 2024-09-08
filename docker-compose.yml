@@ -17,7 +17,7 @@ services:
     build:
       context: .
     container_name: nestjs-backend
-    # restart: always
+    restart: always
     environment:
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
