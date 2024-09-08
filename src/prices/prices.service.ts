@@ -123,7 +123,7 @@ export class PricesService {
                 order: { createdAt: 'DESC' },
             });
 
-            if (currentPrice && currentPrice.price >= alert.targetPrice) {
+            if (currentPrice && currentPrice.price == alert.targetPrice) {
                 console.log('sending price');
                 console.log([currentPrice.price, alert.targetPrice, alert.email])
                 this.sendAlertEmail(alert.chain, alert.targetPrice, alert.email, `Price alert set for ${alert.chain} at price $${alert.targetPrice}`);
