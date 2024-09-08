@@ -9,29 +9,41 @@ import { Price } from 'src/entities/price.entity';
 import { Between } from 'typeorm';
 import { Alert } from 'src/entities/alert.entity';
 import * as mailgun from 'mailgun-js';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class PricesService {
+    private apiKey: string;
+    private apiHost: string;
+    private senderEmail: string;
+    private supportEmail: string;
+    private moralisKey: string;
 
     constructor(
         private readonly httpService: HttpService,
+        private readonly configService: ConfigService,
         @InjectRepository(Price)
         private readonly priceRepository: Repository<Price>,
         @InjectRepository(Alert) private readonly alertRepository: Repository<Alert>,
     ) {
-        this.mailgun = mailgun({
-            apiKey: this.API_KEY,
-            domain: this.DOMAIN,
-        });
+        // this.mailgun = mailgun({
+        //     apiKey: this.API_KEY,
+        //     domain: this.DOMAIN,
+        // });
+        this.apiKey = this.configService.get<string>('RAPIDAPI_KEY');
+        this.apiHost = this.configService.get<string>('RAPIDAPI_HOST');
+        this.senderEmail = this.configService.get<string>('SENDER_EMAIL');
+        this.supportEmail = this.configService.get<string>('SUPPORT_EMAIL');
+        this.moralisKey = this.configService.get<string>('MORALIS-KEY');
     }
 
-    private mailgun;
+    // private mailgun;
 
-    private API_KEY = 'f235f6741085670b395fac812ab89570-b7b36bc2-57917031';
+    // private API_KEY = '';
 
-    private DOMAIN = 'app.kwiq.app';
+    // private DOMAIN = '';
 
-    private readonly moralisApiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImEyNDBhMGVkLTNjNTctNGNiNS1hMzMxLTMzODkyMDkyODExMCIsIm9yZ0lkIjoiNDA3NTM1IiwidXNlcklkIjoiNDE4NzY1IiwidHlwZUlkIjoiMzkxN2UyYTAtODZkZi00MzBhLThhMDUtMTYwMGQxNjJhYmU4IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3MjU3NDg0MDYsImV4cCI6NDg4MTUwODQwNn0.BysJti2MUMu39wFNwOMYPszs7ZB_J9v1bXL_frgtV-I';
+    // private readonly moralisApiKey = '';
 
     // Polygon (MATIC) contract address on Ethereum
     private readonly polygonAddress = '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0';
@@ -46,7 +58,7 @@ export class PricesService {
                     `https://deep-index.moralis.io/api/v2.2/erc20/${contractAddress}/price`,
                     {
                         headers: {
-                            'X-API-Key': this.moralisApiKey,
+                            'X-API-Key': this.moralisKey,
                         },
                     }
                 )
@@ -120,19 +132,69 @@ export class PricesService {
     }
 
     private async sendAlertEmail(chain: string, price: number, email: string, msg: string) {
-        const data = {
-            from: 'Alert <info@kwiq.app>',
-            to: email,
-            subject: `Price Alert for ${chain}`,
-            text: msg,
+
+        /* ------------------------ THIS IS FOR MAILGUN SMTP ------------------------ */
+        // const data = {
+        //     from: 'Alert <info@kwiq.app>',
+        //     to: email,
+        //     subject: `Price Alert for ${chain}`,
+        //     text: msg,
+        // };
+        // this.mailgun.messages().send(data, (error, body) => {
+        //     if (error) {
+        //         console.error('Mailgun error:', error);
+        //     } else {
+        //         console.log('Mail sent successfully:', body);
+        //     }
+        // });
+
+        /* -------------------------- THIS IS FOR FIREBASE -------------------------- */
+        const options = {
+            method: 'POST',
+            url: `https://${this.apiHost}/send`,
+            headers: {
+                'x-rapidapi-key': this.apiKey,
+                'x-rapidapi-host': this.apiHost,
+                'Content-Type': 'application/json',
+            },
+            data: {
+                personalizations: [
+                    {
+                        to: [
+                            {
+                                email: email,
+                                name: 'User',
+                            },
+                        ],
+                    },
+                ],
+                from: {
+                    email: this.supportEmail,
+                    name: 'Alert',
+                },
+                reply_to: {
+                    email: this.senderEmail,
+                    name: 'Alert',
+                },
+                subject: `Price Alert for ${chain}`,
+                content: [
+
+                    {
+                        type: 'text/plain',
+                        value: msg,
+                    },
+                ],
+            },
         };
-        this.mailgun.messages().send(data, (error, body) => {
-            if (error) {
-                console.error('Mailgun error:', error);
-            } else {
-                console.log('Mail sent successfully:', body);
-            }
-        });
+
+        try {
+            const response = await firstValueFrom(this.httpService.request(options))
+            console.log('Email sent successfully:', response.data);
+        } catch (error) {
+            console.error('Error sending email:', error.response?.data || error.message);
+        }
+
+
     }
 
     async getHourlyPrices() {

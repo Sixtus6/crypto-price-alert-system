@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { PricesModule } from './prices/prices.module';
 import { Price } from './entities/price.entity';
 import { Alert } from './entities/alert.entity';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -18,6 +19,9 @@ import { Alert } from './entities/alert.entity';
       database: process.env.DATABASE_NAME || 'crypto_prices',
       entities: [Price, Alert],
       synchronize: true,
+    }),
+    ConfigModule.forRoot({
+      isGlobal: true,
     }),
     ScheduleModule.forRoot(), PricesModule],
   controllers: [AppController],
